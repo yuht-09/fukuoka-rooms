@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useContext, useState, useEffect, ReactNode } from "react"
+import { createContext, useContext, useState, useCallback, ReactNode } from "react"
 
 type FavoritesContextType = {
   favorites: string[]
@@ -13,37 +13,37 @@ const FavoritesContext = createContext<FavoritesContextType | undefined>(undefin
 
 const STORAGE_KEY = "fukuoka-rooms-favorites"
 
-export function FavoritesProvider({ children }: { children: ReactNode }) {
-  const [favorites, setFavorites] = useState<string[]>([])
-  const [loaded, setLoaded] = useState(false)
-
-  // Load from localStorage on mount
-  useEffect(() => {
+function loadFromStorage(): string[] {
+  if (typeof window === "undefined") return []
+  try {
     const stored = localStorage.getItem(STORAGE_KEY)
-    if (stored) {
-      try {
-        setFavorites(JSON.parse(stored))
-      } catch {}
-    }
-    setLoaded(true)
-  }, [])
-
-  // Save to localStorage on change
-  useEffect(() => {
-    if (loaded) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(favorites))
-    }
-  }, [favorites, loaded])
-
-  const toggleFavorite = (id: string) => {
-    setFavorites((prev) =>
-      prev.includes(id) ? prev.filter((f) => f !== id) : [...prev, id]
-    )
+    return stored ? JSON.parse(stored) : []
+  } catch {
+    return []
   }
+}
+
+function saveToStorage(favorites: string[]) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(favorites))
+}
+
+export function FavoritesProvider({ children }: { children: ReactNode }) {
+  const [favorites, setFavorites] = useState<string[]>(loadFromStorage)
+
+  const toggleFavorite = useCallback((id: string) => {
+    setFavorites((prev) => {
+      const next = prev.includes(id) ? prev.filter((f) => f !== id) : [...prev, id]
+      saveToStorage(next)
+      return next
+    })
+  }, [])
 
   const isFavorite = (id: string) => favorites.includes(id)
 
-  const clearFavorites = () => setFavorites([])
+  const clearFavorites = useCallback(() => {
+    setFavorites([])
+    saveToStorage([])
+  }, [])
 
   return (
     <FavoritesContext.Provider value={{ favorites, toggleFavorite, isFavorite, clearFavorites }}>

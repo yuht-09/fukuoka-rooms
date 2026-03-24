@@ -1,8 +1,8 @@
 "use client"
 
-import { Suspense, useEffect, useMemo, useState } from "react"
+import { Suspense, useMemo, useState } from "react"
 import { useSearchParams } from "next/navigation"
-import { Building2, SlidersHorizontal, Search, X } from "lucide-react"
+import { SlidersHorizontal, Search, X } from "lucide-react"
 import { properties } from "@/data/properties"
 import { FilterSidebar } from "@/components/filter/filter-sidebar"
 import { PropertyCard } from "@/components/property/property-card"
@@ -31,26 +31,22 @@ const sortOptions: { value: SortKey; label: string }[] = [
   { value: "walk-asc", label: "駅から近い順" },
 ]
 
+function getInitialFilters(searchParams: ReturnType<typeof useSearchParams>): FilterState {
+  const area = searchParams.get("area")
+  const rentMax = searchParams.get("rentMax")
+  return {
+    ...defaultFilters,
+    ...(area ? { areas: [area] } : {}),
+    ...(rentMax ? { rentMax: Number(rentMax) } : {}),
+  }
+}
+
 function RoomsContent() {
   const searchParams = useSearchParams()
-  const [filters, setFilters] = useState<FilterState>(defaultFilters)
+  const [filters, setFilters] = useState<FilterState>(() => getInitialFilters(searchParams))
   const [sortKey, setSortKey] = useState<SortKey>("rent-asc")
   const [view, setView] = useState<"grid" | "list">("grid")
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false)
-
-  // Read URL params on mount
-  useEffect(() => {
-    const area = searchParams.get("area")
-    const rentMax = searchParams.get("rentMax")
-
-    if (area || rentMax) {
-      setFilters((prev) => ({
-        ...prev,
-        ...(area ? { areas: [area] } : {}),
-        ...(rentMax ? { rentMax: Number(rentMax) } : {}),
-      }))
-    }
-  }, [searchParams])
 
   const filtered = useMemo(
     () => sortProperties(filterProperties(properties, filters), sortKey),

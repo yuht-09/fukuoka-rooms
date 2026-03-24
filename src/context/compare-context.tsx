@@ -1,10 +1,10 @@
 "use client"
 
-import { createContext, useContext, useState, useEffect, ReactNode } from "react"
+import { createContext, useContext, useState, useCallback, ReactNode } from "react"
 
 type CompareContextType = {
   compareIds: string[]
-  addToCompare: (id: string) => boolean // returns false if already at max
+  addToCompare: (id: string) => boolean
   removeFromCompare: (id: string) => void
   isInCompare: (id: string) => boolean
   clearCompare: () => void
@@ -16,39 +16,47 @@ const CompareContext = createContext<CompareContextType | undefined>(undefined)
 const STORAGE_KEY = "fukuoka-rooms-compare"
 const MAX_COMPARE = 3
 
-export function CompareProvider({ children }: { children: ReactNode }) {
-  const [compareIds, setCompareIds] = useState<string[]>([])
-  const [loaded, setLoaded] = useState(false)
-
-  useEffect(() => {
+function loadFromStorage(): string[] {
+  if (typeof window === "undefined") return []
+  try {
     const stored = localStorage.getItem(STORAGE_KEY)
-    if (stored) {
-      try {
-        setCompareIds(JSON.parse(stored))
-      } catch {}
-    }
-    setLoaded(true)
-  }, [])
+    return stored ? JSON.parse(stored) : []
+  } catch {
+    return []
+  }
+}
 
-  useEffect(() => {
-    if (loaded) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(compareIds))
-    }
-  }, [compareIds, loaded])
+function saveToStorage(ids: string[]) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(ids))
+}
+
+export function CompareProvider({ children }: { children: ReactNode }) {
+  const [compareIds, setCompareIds] = useState<string[]>(loadFromStorage)
 
   const addToCompare = (id: string): boolean => {
     if (compareIds.length >= MAX_COMPARE || compareIds.includes(id)) return false
-    setCompareIds((prev) => [...prev, id])
+    setCompareIds((prev) => {
+      const next = [...prev, id]
+      saveToStorage(next)
+      return next
+    })
     return true
   }
 
-  const removeFromCompare = (id: string) => {
-    setCompareIds((prev) => prev.filter((c) => c !== id))
-  }
+  const removeFromCompare = useCallback((id: string) => {
+    setCompareIds((prev) => {
+      const next = prev.filter((c) => c !== id)
+      saveToStorage(next)
+      return next
+    })
+  }, [])
 
   const isInCompare = (id: string) => compareIds.includes(id)
 
-  const clearCompare = () => setCompareIds([])
+  const clearCompare = useCallback(() => {
+    setCompareIds([])
+    saveToStorage([])
+  }, [])
 
   const isMaxReached = compareIds.length >= MAX_COMPARE
 

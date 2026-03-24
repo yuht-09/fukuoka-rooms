@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { Heart, GitCompareArrows, Search } from "lucide-react"
+import { Heart, GitCompareArrows } from "lucide-react"
 import { properties } from "@/data/properties"
 import { useFavorites } from "@/context/favorites-context"
 import { useCompare } from "@/context/compare-context"
