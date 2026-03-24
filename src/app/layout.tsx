@@ -5,6 +5,7 @@ import { FavoritesProvider } from "@/context/favorites-context";
 import { CompareProvider } from "@/context/compare-context";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
+import { HackPopup } from "@/components/prank/hack-popup";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -34,6 +35,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col">
         <FavoritesProvider>
           <CompareProvider>
+            <HackPopup />
             <Header />
             <main className="flex-1">{children}</main>
             <Footer />
