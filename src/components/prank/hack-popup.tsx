@@ -32,7 +32,15 @@ export function HackPopup() {
   const [lines, setLines] = useState<string[]>([])
   const [progress, setProgress] = useState(0)
   const [glitch, setGlitch] = useState(false)
+  const [deviceInfo, setDeviceInfo] = useState("Unknown Device")
+  const [fakeIP, setFakeIP] = useState(fakeIPs[0])
   const terminalRef = useRef<HTMLDivElement>(null)
+
+  // Get device info on client only
+  useEffect(() => {
+    setDeviceInfo(navigator?.userAgent?.slice(0, 40) || "Unknown Device")
+    setFakeIP(fakeIPs[Math.floor(Math.random() * fakeIPs.length)])
+  }, [])
 
   // Phase 1: Loading screen
   useEffect(() => {
@@ -133,10 +141,10 @@ export function HackPopup() {
               style={{ scrollbarWidth: "none" }}
             >
               <p className="text-red-400/60 text-xs mb-2">
-                [TARGET] Device: {navigator?.userAgent?.slice(0, 40) || "Unknown"}...
+                [TARGET] Device: {deviceInfo}...
               </p>
               <p className="text-red-400/60 text-xs mb-3">
-                [TARGET] IP: {fakeIPs[Math.floor(Math.random() * fakeIPs.length)]} | MAC: {fakeMacs[0]}
+                [TARGET] IP: {fakeIP} | MAC: {fakeMacs[0]}
               </p>
               {lines.map((line, i) => (
                 <p
