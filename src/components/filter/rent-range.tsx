@@ -1,5 +1,7 @@
 "use client"
 
+import { useMemo } from "react"
+import { Banknote } from "lucide-react"
 import {
   Select,
   SelectContent,
@@ -29,6 +31,9 @@ const rentOptions = [
   { value: 200000, label: "20万円" },
 ]
 
+const SCALE_MIN = 0
+const SCALE_MAX = 200000
+
 function formatRentLabel(yen: number): string {
   if (yen === 0) return "下限なし"
   if (yen === 200000) return "上限なし"
@@ -37,12 +42,41 @@ function formatRentLabel(yen: number): string {
 }
 
 export function RentRange({ min, max, onChange }: RentRangeProps) {
+  const rangeBar = useMemo(() => {
+    const leftPct = (min / SCALE_MAX) * 100
+    const rightPct = (max / SCALE_MAX) * 100
+    return { left: `${leftPct}%`, width: `${rightPct - leftPct}%` }
+  }, [min, max])
+
   return (
     <div>
-      <p className="text-sm font-medium text-foreground mb-3">家賃</p>
+      <div className="flex items-center gap-2 mb-3">
+        <Banknote className="size-4 text-amber-500/70" />
+        <p className="text-sm font-medium text-foreground">家賃</p>
+      </div>
+
+      {/* Visual range bar */}
+      <div className="relative h-1.5 rounded-full bg-white/[0.06] mb-4">
+        <div
+          className="absolute top-0 h-full rounded-full bg-gradient-to-r from-indigo-500 to-indigo-400"
+          style={rangeBar}
+        />
+        {/* Glow effect */}
+        <div
+          className="absolute top-0 h-full rounded-full bg-gradient-to-r from-indigo-500/40 to-indigo-400/40 blur-sm"
+          style={rangeBar}
+        />
+      </div>
+
+      {/* Range label */}
+      <p className="text-xs font-medium text-indigo-400 mb-3 tracking-wide">
+        {formatRentLabel(min)} 〜 {formatRentLabel(max)}
+      </p>
+
+      {/* Selects */}
       <div className="flex items-center gap-2">
         <Select value={min} onValueChange={(val) => onChange(val as number, max)}>
-          <SelectTrigger className="flex-1 text-xs">
+          <SelectTrigger className="flex-1 text-xs bg-white/[0.03] border-white/[0.08] hover:border-white/[0.15] transition-colors">
             <SelectValue placeholder="下限" />
           </SelectTrigger>
           <SelectContent>
@@ -55,9 +89,9 @@ export function RentRange({ min, max, onChange }: RentRangeProps) {
               ))}
           </SelectContent>
         </Select>
-        <span className="text-xs text-muted-foreground shrink-0">〜</span>
+        <span className="text-xs text-muted-foreground/50 shrink-0 font-light">〜</span>
         <Select value={max} onValueChange={(val) => onChange(min, val as number)}>
-          <SelectTrigger className="flex-1 text-xs">
+          <SelectTrigger className="flex-1 text-xs bg-white/[0.03] border-white/[0.08] hover:border-white/[0.15] transition-colors">
             <SelectValue placeholder="上限" />
           </SelectTrigger>
           <SelectContent>
@@ -71,9 +105,6 @@ export function RentRange({ min, max, onChange }: RentRangeProps) {
           </SelectContent>
         </Select>
       </div>
-      <p className="text-xs text-muted-foreground mt-2">
-        {formatRentLabel(min)} 〜 {formatRentLabel(max)}
-      </p>
     </div>
   )
 }

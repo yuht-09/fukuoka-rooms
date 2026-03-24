@@ -1,7 +1,13 @@
 "use client"
 
-import { SlidersHorizontal, RotateCcw } from "lucide-react"
-import { Separator } from "@/components/ui/separator"
+import {
+  MapPin,
+  LayoutGrid,
+  Building2,
+  Sparkles,
+  Footprints,
+  RotateCcw,
+} from "lucide-react"
 import {
   Select,
   SelectContent,
@@ -53,6 +59,18 @@ const walkMinuteOptions = [
 
 const areaOptions = areas.map((a) => ({ value: a.slug, label: a.name }))
 
+function GradientSeparator() {
+  return (
+    <div className="h-px w-full bg-gradient-to-r from-transparent via-white/[0.06] to-transparent" />
+  )
+}
+
+function SectionIcon({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="text-indigo-400/70">{children}</span>
+  )
+}
+
 export function FilterSidebar({ filters, onChange }: FilterSidebarProps) {
   function update(patch: Partial<FilterState>) {
     onChange({ ...filters, ...patch })
@@ -62,65 +80,100 @@ export function FilterSidebar({ filters, onChange }: FilterSidebarProps) {
     onChange({ ...defaultFilters })
   }
 
+  const activeCount =
+    filters.areas.length +
+    filters.layouts.length +
+    filters.buildingTypes.length +
+    filters.features.length +
+    (filters.walkMinutes !== null ? 1 : 0) +
+    (filters.rentMin > 0 ? 1 : 0) +
+    (filters.rentMax < 200000 ? 1 : 0)
+
   return (
-    <div className="w-full space-y-6">
+    <div className="w-full space-y-1">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <SlidersHorizontal className="size-4 text-primary" />
-          <h2 className="text-sm font-semibold text-foreground">絞り込み</h2>
-        </div>
+      <div className="flex items-center justify-between pb-4">
+        <h2 className="text-sm font-semibold text-foreground tracking-wide">
+          絞り込み
+        </h2>
         <button
           type="button"
           onClick={handleClear}
-          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          className={`inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full transition-all duration-200 ${
+            activeCount > 0
+              ? "bg-indigo-500/15 text-indigo-400 hover:bg-indigo-500/25"
+              : "text-muted-foreground/50 hover:text-muted-foreground"
+          }`}
         >
           <RotateCcw className="size-3" />
           クリア
+          {activeCount > 0 && (
+            <span className="ml-0.5 text-[10px] font-semibold tabular-nums">
+              ({activeCount})
+            </span>
+          )}
         </button>
       </div>
 
-      <Separator />
-
       {/* エリア */}
-      <CheckboxGroup
-        label="エリア"
-        options={areaOptions}
-        selected={filters.areas}
-        onChange={(areas) => update({ areas })}
-      />
+      <div className="rounded-xl bg-white/[0.02] border border-white/[0.04] p-4">
+        <div className="flex items-center gap-2 mb-1">
+          <SectionIcon><MapPin className="size-3.5" /></SectionIcon>
+        </div>
+        <CheckboxGroup
+          label="エリア"
+          options={areaOptions}
+          selected={filters.areas}
+          onChange={(areas) => update({ areas })}
+        />
+      </div>
 
-      <Separator />
+      <GradientSeparator />
 
       {/* 家賃 */}
-      <RentRange
-        min={filters.rentMin}
-        max={filters.rentMax}
-        onChange={(rentMin, rentMax) => update({ rentMin, rentMax })}
-      />
+      <div className="rounded-xl bg-white/[0.02] border border-white/[0.04] p-4">
+        <RentRange
+          min={filters.rentMin}
+          max={filters.rentMax}
+          onChange={(rentMin, rentMax) => update({ rentMin, rentMax })}
+        />
+      </div>
 
-      <Separator />
+      <GradientSeparator />
 
       {/* 間取り */}
-      <CheckboxGroup
-        label="間取り"
-        options={layoutOptions}
-        selected={filters.layouts}
-        onChange={(layouts) => update({ layouts })}
-      />
+      <div className="rounded-xl bg-white/[0.02] border border-white/[0.04] p-4">
+        <div className="flex items-center gap-2 mb-1">
+          <SectionIcon><LayoutGrid className="size-3.5" /></SectionIcon>
+        </div>
+        <CheckboxGroup
+          label="間取り"
+          options={layoutOptions}
+          selected={filters.layouts}
+          onChange={(layouts) => update({ layouts })}
+        />
+      </div>
 
-      <Separator />
+      <GradientSeparator />
 
       {/* 駅徒歩 */}
-      <div>
-        <p className="text-sm font-medium text-foreground mb-3">駅徒歩</p>
+      <div className="rounded-xl bg-white/[0.02] border border-white/[0.04] p-4">
+        <div className="flex items-center gap-2 mb-3">
+          <SectionIcon><Footprints className="size-3.5" /></SectionIcon>
+          <p className="text-sm font-medium text-foreground">駅徒歩</p>
+          {filters.walkMinutes !== null && (
+            <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-indigo-500/20 text-[11px] font-semibold text-indigo-400">
+              1
+            </span>
+          )}
+        </div>
         <Select
           value={filters.walkMinutes ?? 0}
           onValueChange={(val) =>
             update({ walkMinutes: (val as number) === 0 ? null : (val as number) })
           }
         >
-          <SelectTrigger className="w-full text-xs">
+          <SelectTrigger className="w-full text-xs bg-white/[0.03] border-white/[0.08] hover:border-white/[0.15] transition-colors">
             <SelectValue placeholder="指定なし" />
           </SelectTrigger>
           <SelectContent>
@@ -133,25 +186,35 @@ export function FilterSidebar({ filters, onChange }: FilterSidebarProps) {
         </Select>
       </div>
 
-      <Separator />
+      <GradientSeparator />
 
       {/* 建物タイプ */}
-      <CheckboxGroup
-        label="建物タイプ"
-        options={buildingTypeOptions}
-        selected={filters.buildingTypes}
-        onChange={(buildingTypes) => update({ buildingTypes })}
-      />
+      <div className="rounded-xl bg-white/[0.02] border border-white/[0.04] p-4">
+        <div className="flex items-center gap-2 mb-1">
+          <SectionIcon><Building2 className="size-3.5" /></SectionIcon>
+        </div>
+        <CheckboxGroup
+          label="建物タイプ"
+          options={buildingTypeOptions}
+          selected={filters.buildingTypes}
+          onChange={(buildingTypes) => update({ buildingTypes })}
+        />
+      </div>
 
-      <Separator />
+      <GradientSeparator />
 
       {/* こだわり条件 */}
-      <CheckboxGroup
-        label="こだわり条件"
-        options={featureOptions}
-        selected={filters.features}
-        onChange={(features) => update({ features })}
-      />
+      <div className="rounded-xl bg-white/[0.02] border border-white/[0.04] p-4">
+        <div className="flex items-center gap-2 mb-1">
+          <SectionIcon><Sparkles className="size-3.5" /></SectionIcon>
+        </div>
+        <CheckboxGroup
+          label="こだわり条件"
+          options={featureOptions}
+          selected={filters.features}
+          onChange={(features) => update({ features })}
+        />
+      </div>
     </div>
   )
 }
