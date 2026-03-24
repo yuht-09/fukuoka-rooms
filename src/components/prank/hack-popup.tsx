@@ -1,9 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
-
-const fakeIPs = ["192.168.1.47", "10.0.0.134", "172.16.254.1"]
-const fakeMacs = ["A4:83:E7:2F:9B:01", "D8:BB:C1:4E:7A:F3"]
+import { useState, useEffect, useRef, useCallback } from "react"
 
 const scanLines = [
   "$ sudo nmap -sS -O target_device...",
@@ -28,209 +25,281 @@ const scanLines = [
 ]
 
 export function HackPopup() {
-  const [phase, setPhase] = useState<"loading" | "scanning" | "complete" | "dismissed">("loading")
+  const [phase, setPhase] = useState(0) // 0=loading, 1=scanning, 2=complete, 3=dismissed
   const [lines, setLines] = useState<string[]>([])
   const [progress, setProgress] = useState(0)
-  const [glitch, setGlitch] = useState(false)
-  const [deviceInfo, setDeviceInfo] = useState("Unknown Device")
-  const [fakeIP, setFakeIP] = useState(fakeIPs[0])
   const terminalRef = useRef<HTMLDivElement>(null)
+  const [mounted, setMounted] = useState(false)
 
-  // Get device info on client only
   useEffect(() => {
-    setDeviceInfo(navigator?.userAgent?.slice(0, 40) || "Unknown Device")
-    setFakeIP(fakeIPs[Math.floor(Math.random() * fakeIPs.length)])
+    setMounted(true)
   }, [])
 
-  // Phase 1: Loading screen
+  // Phase 0 -> 1
   useEffect(() => {
-    const timer = setTimeout(() => setPhase("scanning"), 2000)
-    return () => clearTimeout(timer)
-  }, [])
+    if (!mounted || phase !== 0) return
+    const t = setTimeout(() => setPhase(1), 2000)
+    return () => clearTimeout(t)
+  }, [mounted, phase])
 
-  // Phase 2: Terminal scan
+  // Phase 1: scanning
   useEffect(() => {
-    if (phase !== "scanning") return
-    let i = 0
-    const interval = setInterval(() => {
-      if (i < scanLines.length) {
-        setLines((prev) => [...prev, scanLines[i]])
-        setProgress(Math.round(((i + 1) / scanLines.length) * 100))
-        i++
-        if (terminalRef.current) {
-          terminalRef.current.scrollTop = terminalRef.current.scrollHeight
-        }
+    if (!mounted || phase !== 1) return
+    let idx = 0
+    const iv = setInterval(() => {
+      if (idx < scanLines.length) {
+        const line = scanLines[idx]
+        setLines((prev) => [...prev, line])
+        setProgress(Math.round(((idx + 1) / scanLines.length) * 100))
+        idx++
+        terminalRef.current?.scrollTo(0, terminalRef.current.scrollHeight)
       } else {
-        clearInterval(interval)
-        setTimeout(() => {
-          setGlitch(true)
-          setTimeout(() => setPhase("complete"), 500)
-        }, 800)
+        clearInterval(iv)
+        setTimeout(() => setPhase(2), 1000)
       }
     }, 400)
-    return () => clearInterval(interval)
-  }, [phase])
+    return () => clearInterval(iv)
+  }, [mounted, phase])
 
-  // Glitch effect
-  useEffect(() => {
-    if (!glitch) return
-    const timer = setTimeout(() => setGlitch(false), 500)
-    return () => clearTimeout(timer)
-  }, [glitch])
+  const dismiss = useCallback(() => setPhase(3), [])
 
-  if (phase === "dismissed") return null
+  if (!mounted || phase === 3) return null
 
   return (
     <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center"
-      style={{ backgroundColor: "rgba(0,0,0,0.95)" }}
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 99999,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: "rgba(0,0,0,0.96)",
+        fontFamily: "monospace",
+      }}
     >
-      {/* Scanline overlay */}
+      {/* Scanlines */}
       <div
-        className="fixed inset-0 pointer-events-none z-[10000] opacity-[0.03]"
         style={{
-          backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,255,0,0.1) 2px, rgba(0,255,0,0.1) 4px)",
+          position: "fixed",
+          inset: 0,
+          pointerEvents: "none",
+          zIndex: 100000,
+          opacity: 0.03,
+          backgroundImage:
+            "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,255,0,0.15) 2px, rgba(0,255,0,0.15) 4px)",
         }}
       />
 
-      {/* Glitch effect */}
-      {glitch && (
-        <div className="fixed inset-0 z-[10001] pointer-events-none">
-          <div className="absolute inset-0 bg-red-500/20 animate-pulse" />
-          <div className="absolute top-1/3 left-0 right-0 h-2 bg-white/30 translate-x-4" />
-          <div className="absolute top-2/3 left-0 right-0 h-1 bg-cyan-400/40 -translate-x-8" />
-        </div>
-      )}
-
-      <div className="w-full max-w-lg mx-4 relative">
-        {/* Phase 1: Loading */}
-        {phase === "loading" && (
-          <div className="text-center">
-            <div className="relative w-20 h-20 mx-auto mb-6">
-              <div className="absolute inset-0 border-2 border-red-500/30 rounded-full animate-ping" />
-              <div className="absolute inset-2 border-2 border-red-500/50 rounded-full animate-spin" style={{ animationDuration: "2s" }} />
-              <div className="absolute inset-4 border-2 border-t-red-500 border-r-transparent border-b-transparent border-l-transparent rounded-full animate-spin" style={{ animationDuration: "0.8s" }} />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-red-500 text-2xl">⚠</span>
-              </div>
-            </div>
-            <p className="text-red-500 text-sm font-mono animate-pulse">
+      <div style={{ width: "100%", maxWidth: 480, margin: "0 16px" }}>
+        {/* Phase 0: Loading */}
+        {phase === 0 && (
+          <div style={{ textAlign: "center" }}>
+            <div
+              style={{
+                width: 64,
+                height: 64,
+                margin: "0 auto 24px",
+                border: "2px solid rgba(239,68,68,0.5)",
+                borderTopColor: "#ef4444",
+                borderRadius: "50%",
+                animation: "hack-spin 0.8s linear infinite",
+              }}
+            />
+            <p style={{ color: "#ef4444", fontSize: 14, animation: "hack-pulse 1.5s ease-in-out infinite" }}>
               ESTABLISHING CONNECTION...
             </p>
-            <p className="text-red-500/50 text-xs font-mono mt-2">
-              Bypassing firewall... {fakeIPs[0]}
+            <p style={{ color: "rgba(239,68,68,0.4)", fontSize: 11, marginTop: 8 }}>
+              Bypassing firewall... 192.168.1.47
             </p>
           </div>
         )}
 
-        {/* Phase 2: Scanning terminal */}
-        {phase === "scanning" && (
-          <div className="rounded-lg overflow-hidden border border-red-500/30 shadow-2xl shadow-red-500/10">
+        {/* Phase 1: Terminal */}
+        {phase === 1 && (
+          <div
+            style={{
+              borderRadius: 8,
+              overflow: "hidden",
+              border: "1px solid rgba(239,68,68,0.3)",
+              boxShadow: "0 0 40px rgba(239,68,68,0.1)",
+            }}
+          >
             {/* Terminal header */}
-            <div className="bg-red-950/80 px-4 py-2 flex items-center gap-2 border-b border-red-500/20">
-              <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse" />
-              <div className="w-3 h-3 rounded-full bg-yellow-500/60" />
-              <div className="w-3 h-3 rounded-full bg-green-500/40" />
-              <span className="text-red-400/70 text-xs font-mono ml-2">root@remote — /exploit</span>
+            <div
+              style={{
+                background: "rgba(80,0,0,0.8)",
+                padding: "8px 16px",
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                borderBottom: "1px solid rgba(239,68,68,0.2)",
+              }}
+            >
+              <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#ef4444", animation: "hack-pulse 1.5s ease-in-out infinite" }} />
+              <div style={{ width: 10, height: 10, borderRadius: "50%", background: "rgba(234,179,8,0.5)" }} />
+              <div style={{ width: 10, height: 10, borderRadius: "50%", background: "rgba(34,197,94,0.4)" }} />
+              <span style={{ color: "rgba(248,113,113,0.6)", fontSize: 11, marginLeft: 8 }}>
+                root@remote — /exploit
+              </span>
             </div>
 
             {/* Terminal body */}
             <div
               ref={terminalRef}
-              className="bg-black/90 p-4 h-64 overflow-y-auto font-mono text-sm"
-              style={{ scrollbarWidth: "none" }}
+              style={{
+                background: "rgba(0,0,0,0.9)",
+                padding: 16,
+                height: 256,
+                overflowY: "auto",
+                fontSize: 12,
+              }}
             >
-              <p className="text-red-400/60 text-xs mb-2">
-                [TARGET] Device: {deviceInfo}...
-              </p>
-              <p className="text-red-400/60 text-xs mb-3">
-                [TARGET] IP: {fakeIP} | MAC: {fakeMacs[0]}
+              <p style={{ color: "rgba(248,113,113,0.5)", fontSize: 11, marginBottom: 12 }}>
+                [TARGET] Device: Mobile/Desktop Browser
               </p>
               {lines.map((line, i) => (
                 <p
                   key={i}
-                  className={`text-xs leading-relaxed ${
-                    line.startsWith("[!]")
-                      ? "text-red-400 font-bold"
+                  style={{
+                    lineHeight: 1.8,
+                    color: line.startsWith("[!]")
+                      ? "#f87171"
                       : line.startsWith("[+]")
-                        ? "text-green-400"
+                        ? "#4ade80"
                         : line.startsWith("[*]")
-                          ? "text-cyan-400/80"
-                          : "text-green-300/60"
-                  }`}
+                          ? "rgba(103,194,232,0.7)"
+                          : "rgba(134,239,172,0.5)",
+                    fontWeight: line.startsWith("[!]") ? "bold" : "normal",
+                  }}
                 >
                   {line}
                 </p>
               ))}
-              <span className="inline-block w-2 h-4 bg-green-400 animate-pulse ml-1" />
+              <span
+                style={{
+                  display: "inline-block",
+                  width: 8,
+                  height: 16,
+                  background: "#4ade80",
+                  animation: "hack-pulse 1s ease-in-out infinite",
+                  marginLeft: 4,
+                }}
+              />
             </div>
 
-            {/* Progress bar */}
-            <div className="bg-black/90 px-4 pb-3 border-t border-red-500/10">
-              <div className="flex items-center justify-between text-xs font-mono mb-1">
-                <span className="text-red-400">EXTRACTION PROGRESS</span>
-                <span className="text-red-400">{progress}%</span>
+            {/* Progress */}
+            <div style={{ background: "rgba(0,0,0,0.9)", padding: "0 16px 12px", borderTop: "1px solid rgba(239,68,68,0.1)" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, marginBottom: 4 }}>
+                <span style={{ color: "#f87171" }}>EXTRACTION PROGRESS</span>
+                <span style={{ color: "#f87171" }}>{progress}%</span>
               </div>
-              <div className="h-1.5 bg-red-950 rounded-full overflow-hidden">
+              <div style={{ height: 6, background: "rgba(80,0,0,0.5)", borderRadius: 4, overflow: "hidden" }}>
                 <div
-                  className="h-full bg-gradient-to-r from-red-600 to-red-400 transition-all duration-300 rounded-full"
-                  style={{ width: `${progress}%` }}
+                  style={{
+                    height: "100%",
+                    width: `${progress}%`,
+                    background: "linear-gradient(to right, #dc2626, #f87171)",
+                    borderRadius: 4,
+                    transition: "width 0.3s",
+                  }}
                 />
               </div>
             </div>
           </div>
         )}
 
-        {/* Phase 3: Complete */}
-        {phase === "complete" && (
-          <div className="text-center space-y-6">
-            {/* Warning icon */}
-            <div className="relative w-24 h-24 mx-auto">
-              <div className="absolute inset-0 bg-red-500/20 rounded-full animate-pulse" />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <svg viewBox="0 0 24 24" className="w-16 h-16 text-red-500" fill="none" stroke="currentColor" strokeWidth="1.5">
-                  <path d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </div>
+        {/* Phase 2: Complete */}
+        {phase === 2 && (
+          <div style={{ textAlign: "center" }}>
+            {/* Warning triangle */}
+            <div style={{ marginBottom: 24 }}>
+              <svg
+                viewBox="0 0 24 24"
+                style={{ width: 64, height: 64, margin: "0 auto", color: "#ef4444" }}
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+              >
+                <path
+                  d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
             </div>
 
             {/* Title */}
-            <div>
-              <h1 className="text-2xl md:text-3xl font-bold text-red-500 font-mono tracking-wide">
-                SECURITY BREACH DETECTED
-              </h1>
-              <div className="h-0.5 w-32 mx-auto mt-3 bg-gradient-to-r from-transparent via-red-500 to-transparent" />
-            </div>
+            <h1 style={{ fontSize: 22, fontWeight: "bold", color: "#ef4444", letterSpacing: 2, marginBottom: 4 }}>
+              SECURITY BREACH DETECTED
+            </h1>
+            <div style={{ width: 120, height: 2, margin: "12px auto 24px", background: "linear-gradient(to right, transparent, #ef4444, transparent)" }} />
 
-            {/* Message */}
-            <div className="bg-red-950/30 border border-red-500/20 rounded-lg p-5 text-left space-y-3">
-              <p className="text-white text-base font-bold text-center">
+            {/* Message box */}
+            <div
+              style={{
+                background: "rgba(80,0,0,0.25)",
+                border: "1px solid rgba(239,68,68,0.2)",
+                borderRadius: 8,
+                padding: 20,
+                textAlign: "left",
+              }}
+            >
+              <p style={{ color: "white", fontSize: 16, fontWeight: "bold", textAlign: "center", marginBottom: 16, lineHeight: 1.6 }}>
                 あなたの全ての端末情報を<br />ハッキングしました
               </p>
-              <div className="text-red-300/70 text-xs font-mono space-y-1 pt-2 border-t border-red-500/10">
-                <p>• ブラウザ履歴・保存パスワード: <span className="text-green-400">取得済み</span></p>
-                <p>• 写真・連絡先データ: <span className="text-green-400">取得済み</span></p>
-                <p>• カメラ・マイク: <span className="text-green-400">アクセス中</span></p>
-                <p>• GPS位置情報: <span className="text-green-400">追跡中</span></p>
-                <p>• SNSアカウント: <span className="text-green-400">侵入済み</span></p>
+              <div style={{ borderTop: "1px solid rgba(239,68,68,0.1)", paddingTop: 12 }}>
+                {[
+                  "ブラウザ履歴・保存パスワード",
+                  "写真・連絡先データ",
+                  "カメラ・マイク",
+                  "GPS位置情報",
+                  "SNSアカウント",
+                ].map((item, i) => (
+                  <p key={i} style={{ color: "rgba(252,165,165,0.6)", fontSize: 11, lineHeight: 2 }}>
+                    {"• "}{item}:{" "}
+                    <span style={{ color: "#4ade80" }}>
+                      {i < 2 ? "取得済み" : i < 4 ? "アクセス中" : "侵入済み"}
+                    </span>
+                  </p>
+                ))}
               </div>
             </div>
 
             {/* Fake timer */}
-            <div className="text-red-400/60 text-xs font-mono">
-              データ公開まで残り: <span className="text-red-400 font-bold">23:59:47</span>
-            </div>
+            <p style={{ color: "rgba(248,113,113,0.5)", fontSize: 11, marginTop: 20 }}>
+              データ公開まで残り: <span style={{ color: "#f87171", fontWeight: "bold" }}>23:59:47</span>
+            </p>
 
-            {/* Dismiss (tiny, hard to notice at first) */}
+            {/* Dismiss */}
             <button
-              onClick={() => setPhase("dismissed")}
-              className="text-white/10 hover:text-white/60 text-[10px] transition-colors duration-500 mt-8"
+              onClick={dismiss}
+              style={{
+                marginTop: 32,
+                background: "none",
+                border: "none",
+                color: "rgba(255,255,255,0.08)",
+                fontSize: 9,
+                cursor: "pointer",
+                padding: 8,
+              }}
             >
               ※ これはジョークです。タップして閉じる
             </button>
           </div>
         )}
       </div>
+
+      {/* CSS animations */}
+      <style>{`
+        @keyframes hack-spin {
+          to { transform: rotate(360deg); }
+        }
+        @keyframes hack-pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.4; }
+        }
+      `}</style>
     </div>
   )
 }
