@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Inter, Noto_Sans_JP } from "next/font/google";
 import "./globals.css";
+import { FavoritesProvider } from "@/context/favorites-context";
+import { CompareProvider } from "@/context/compare-context";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -27,7 +29,13 @@ export default function RootLayout({
       lang="ja"
       className={`${inter.variable} ${notoSansJP.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <FavoritesProvider>
+          <CompareProvider>
+            {children}
+          </CompareProvider>
+        </FavoritesProvider>
+      </body>
     </html>
   );
 }
