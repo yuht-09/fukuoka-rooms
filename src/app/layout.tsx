@@ -3,6 +3,8 @@ import { Inter, Noto_Sans_JP } from "next/font/google";
 import "./globals.css";
 import { FavoritesProvider } from "@/context/favorites-context";
 import { CompareProvider } from "@/context/compare-context";
+import { Header } from "@/components/layout/header";
+import { Footer } from "@/components/layout/footer";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -32,7 +34,9 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col">
         <FavoritesProvider>
           <CompareProvider>
-            {children}
+            <Header />
+            <main className="flex-1">{children}</main>
+            <Footer />
           </CompareProvider>
         </FavoritesProvider>
       </body>
