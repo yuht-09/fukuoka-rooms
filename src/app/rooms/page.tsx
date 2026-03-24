@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useMemo, useState } from "react"
 import { useSearchParams } from "next/navigation"
-import { Building2, SlidersHorizontal, Search } from "lucide-react"
+import { Building2, SlidersHorizontal, Search, X } from "lucide-react"
 import { properties } from "@/data/properties"
 import { FilterSidebar } from "@/components/filter/filter-sidebar"
 import { PropertyCard } from "@/components/property/property-card"
@@ -36,6 +36,7 @@ function RoomsContent() {
   const [filters, setFilters] = useState<FilterState>(defaultFilters)
   const [sortKey, setSortKey] = useState<SortKey>("rent-asc")
   const [view, setView] = useState<"grid" | "list">("grid")
+  const [filterDrawerOpen, setFilterDrawerOpen] = useState(false)
 
   // Read URL params on mount
   useEffect(() => {
@@ -64,11 +65,47 @@ function RoomsContent() {
       {/* Mobile filter button */}
       <button
         type="button"
+        onClick={() => setFilterDrawerOpen(true)}
         className="md:hidden flex items-center gap-2 mb-4 px-4 py-2 rounded-lg border border-border bg-card text-sm text-muted-foreground hover:text-foreground transition-colors"
       >
         <SlidersHorizontal className="size-4" />
         フィルター
       </button>
+
+      {/* Mobile filter drawer */}
+      {filterDrawerOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          onClick={() => setFilterDrawerOpen(false)}
+        />
+      )}
+      <div
+        className={`fixed bottom-0 left-0 right-0 max-h-[80vh] overflow-y-auto bg-card border-t border-border rounded-t-2xl p-4 z-50 md:hidden transition-transform duration-300 ${
+          filterDrawerOpen ? "translate-y-0" : "translate-y-full"
+        }`}
+      >
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-sm font-semibold text-foreground">絞り込み</h2>
+          <button
+            type="button"
+            onClick={() => setFilterDrawerOpen(false)}
+            className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+            aria-label="フィルターを閉じる"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        <FilterSidebar filters={filters} onChange={setFilters} />
+        <div className="sticky bottom-0 pt-4 pb-2 bg-card">
+          <button
+            type="button"
+            onClick={() => setFilterDrawerOpen(false)}
+            className="w-full py-3 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+          >
+            適用する
+          </button>
+        </div>
+      </div>
 
       <div className="flex flex-row gap-8">
         {/* Sidebar - desktop only */}

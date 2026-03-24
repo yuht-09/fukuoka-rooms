@@ -100,7 +100,8 @@ export function CompareTable({ propertyIds }: CompareTableProps) {
   ]
 
   return (
-    <div className="bg-card rounded-xl border border-border overflow-hidden">
+    <div className="overflow-x-auto -mx-4 px-4">
+    <div className="bg-card rounded-xl border border-border overflow-hidden min-w-[600px]">
       {/* Header row: images + title + remove */}
       <div className={`grid ${gridCols}`}>
         <div className="bg-secondary/50 p-4" />
@@ -140,6 +141,7 @@ export function CompareTable({ propertyIds }: CompareTableProps) {
           ))}
         </div>
       ))}
+    </div>
     </div>
   )
 }

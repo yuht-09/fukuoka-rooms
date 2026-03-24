@@ -22,9 +22,9 @@ export function PropertyListItem({ property }: PropertyListItemProps) {
 
   return (
     <div className="group relative rounded-xl overflow-hidden border border-border bg-card hover:border-primary/30 transition-all duration-300">
-      <Link href={`/rooms/${property.id}`} className="flex">
+      <Link href={`/rooms/${property.id}`} className="flex flex-col sm:flex-row">
         {/* Image area */}
-        <div className="relative w-48 shrink-0 aspect-[4/3] bg-secondary">
+        <div className="relative w-full sm:w-48 shrink-0 aspect-[16/9] sm:aspect-[4/3] bg-secondary">
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 text-muted-foreground">
             <Building2 className="w-8 h-8" />
             <span className="text-xs">{property.nearestStation}</span>
